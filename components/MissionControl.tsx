@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Tour from "@/components/Tour";
 import { API_URL, api } from "@/lib/api";
 import {
   STEP_NAMES, type CallOutput, type CommitteeOutput, type DealOutput, type DraftMessage, type EngagementOutput,
@@ -9,7 +10,7 @@ import {
 
 const LABELS: Record<StepName, string> = {
   engagement: "Engagement in", qualify: "Qualify company", committee: "Buying committee", crm: "Save to CRM",
-  outreach: "Draft outreach", approval: "Human approval", send: "Send (sandbox)", reply: "Reply handling",
+  outreach: "Draft outreach", approval: "Human approval", send: "Send", reply: "Reply handling",
   call: "AI voice call", deal: "Deal + next step",
 };
 
@@ -24,9 +25,13 @@ const STATUS_STYLE: Record<StepStatus, string> = {
 
 type Mode = "mock" | "sandbox" | "live" | "offline";
 
-interface ApprovalRequest { approvalId: string; summary: string; drafts: DraftMessage[] }
+interface ApprovalRequest { approvalId: string; code?: string; summary: string; drafts: DraftMessage[] }
+/** A graph8 Work post (Monday brief or approval request). */
+interface WorkPost { kind: "brief" | "approval"; status: StepStatus; text: string; channel?: string; code?: string; reason?: string; error?: string }
+interface Learning { decisions: number; approved: number; rejected: number; edited: number; lessons: string[] }
 
 interface BatchInfo { batchId: string; totalClicks: number; freemail: number; nonBuyer?: number; domains: string[]; runIds: string[]; demo?: boolean }
+interface BatchState { batch?: BatchInfo; runs: RunSummary[]; brief?: WorkPost }
 interface RunSummary {
   runId: string; domain?: string; company?: string; score?: number; qualified?: boolean;
   people: number; drafts: number; sent: number; deal?: string; status: string; approvalId?: string; currentStep?: string;
@@ -46,12 +51,32 @@ export default function MissionControl() {
   const [decided, setDecided] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [batchId, setBatchId] = useState<string | null>(null);
-  const [batch, setBatch] = useState<{ batch?: BatchInfo; runs: RunSummary[] } | null>(null);
+  const [batch, setBatch] = useState<BatchState | null>(null);
   const [edits, setEdits] = useState<Record<string, DraftMessage[]>>({}); // approvalId -> edited drafts
+  const [learning, setLearning] = useState<Learning | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
     api<{ mode: Mode }>("/api/health").then((h) => setMode(h.mode)).catch(() => setMode("offline"));
+    // First visit: open the tour once.
+    let seen = true;
+    try { seen = localStorage.getItem("ard-tour-seen") === "1"; } catch {}
+    if (!seen) { const t = setTimeout(() => setTourOpen(true), 600); return () => clearTimeout(t); }
   }, []);
+
+  function closeTour() {
+    setTourOpen(false);
+    try { localStorage.setItem("ard-tour-seen", "1"); } catch {}
+  }
+
+  // Refresh what the desk has learned whenever a decision could have happened.
+  const decisionCount = events.filter((e) => e.step === "approval" && e.status !== "awaiting_approval" && e.status !== "running").length
+    + (batch?.runs.filter((r) => r.status !== "running" && r.status !== "awaiting_approval").length ?? 0);
+  useEffect(() => {
+    let alive = true;
+    api<Learning>("/api/learning").then((l) => alive && setLearning(l)).catch(() => {});
+    return () => { alive = false; };
+  }, [decisionCount]);
 
   useEffect(() => {
     if (!runId) return;
@@ -64,7 +89,7 @@ export default function MissionControl() {
   useEffect(() => {
     if (!batchId) return;
     let alive = true;
-    const tick = () => api<{ batch?: BatchInfo; runs: RunSummary[] }>(`/api/runs?batchId=${batchId}`).then((s) => alive && setBatch(s)).catch(() => {});
+    const tick = () => api<BatchState>(`/api/runs?batchId=${batchId}`).then((s) => alive && setBatch(s)).catch(() => {});
     tick();
     const t = setInterval(tick, 1200);
     return () => { alive = false; clearInterval(t); };
@@ -73,13 +98,15 @@ export default function MissionControl() {
   const state = useMemo(() => {
     const steps = Object.fromEntries(STEP_NAMES.map((s) => [s, { status: "pending" as StepStatus, data: undefined as unknown, error: undefined as string | undefined }]));
     let approval: ApprovalRequest | undefined;
+    let work: WorkPost | undefined;
     for (const e of events) {
       if (e.step === "run") { if (e.error) steps.engagement.error = e.error; continue; }
-      if (e.step === "webhook") continue;
+      if (e.step === "work") { work = { ...(e.data as WorkPost), status: e.status, error: e.error }; continue; }
+      if (e.step === "webhook" || e.step === "batch") continue;
       steps[e.step] = { status: e.status, data: e.data ?? steps[e.step].data, error: e.error };
       if (e.status === "awaiting_approval") approval = e.data as ApprovalRequest;
     }
-    return { steps: steps as Record<StepName, { status: StepStatus; data: unknown; error?: string }>, approval };
+    return { steps: steps as Record<StepName, { status: StepStatus; data: unknown; error?: string }>, approval, work };
   }, [events]);
 
   const out = <T,>(s: StepName) => (state.steps[s].status === "done" ? (state.steps[s].data as T) : undefined);
@@ -148,29 +175,33 @@ export default function MissionControl() {
       <header className="mb-6 flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Autopilot Revenue Desk</h1>
         <span className="text-sm text-zinc-500">Mission control</span>
-        {mode && <ModeBadge mode={mode} />}
+        {mode && <span data-tour="mode"><ModeBadge mode={mode} /></span>}
+        <button onClick={() => setTourOpen(true)} className="rounded-full border border-zinc-300 px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">Tour</button>
         <div className="ml-auto flex w-full gap-2 sm:w-auto">
           <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="company domain (optional)"
             className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 dark:border-zinc-700 dark:bg-zinc-900 sm:w-64" />
           <button onClick={start} disabled={busy || mode === "offline"} className="rounded-lg border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50 dark:text-sky-300 dark:hover:bg-sky-950">Run one</button>
-          <button onClick={startWeekend} disabled={busy || mode === "offline"} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50">Run weekend</button>
+          <button data-tour="run-weekend" onClick={startWeekend} disabled={busy || mode === "offline"} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50">Run weekend</button>
           <button onClick={reset} disabled={busy} className="rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800">Reset demo</button>
         </div>
       </header>
 
       {(error || runError) && <p className="mb-4 rounded-lg bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">{error ?? runError}</p>}
 
-      {batch ? (
-        <MondayPanel data={batch} selected={runId} onSelect={selectRun} />
-      ) : (
-        <Summary
-          signals={engagement?.signals.length} company={qualify?.qualified ? qualify.company.name : undefined}
-          people={committee?.members.length} drafts={drafts.length} sent={send?.sent.length} deal={deal?.name}
-        />
-      )}
+      <div data-tour="weekend">
+        {batch ? (
+          <MondayPanel data={batch} selected={runId} onSelect={selectRun} />
+        ) : (
+          <Summary
+            signals={engagement?.signals.length} company={qualify?.qualified ? qualify.company.name : undefined}
+            people={committee?.members.length} drafts={drafts.length} sent={send?.sent.length} deal={deal?.name}
+          />
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <Card title={`Pipeline${runId ? ` · ${runId}` : ""}`}>
+        <div className="grid min-w-0 content-start gap-6">
+        <Card tour="pipeline" title={`Pipeline${runId ? ` · ${runId}` : ""}`}>
           <ol className="space-y-1">
             {STEP_NAMES.map((s, i) => {
               const st = state.steps[s];
@@ -179,7 +210,7 @@ export default function MissionControl() {
                   <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_STYLE[st.status]}`} />
                   <div className="min-w-0">
                     <div className="text-sm"><span className="text-zinc-400">{i + 1}.</span> {LABELS[s]}</div>
-                    <div className="text-xs text-zinc-500">{st.status.replace("_", " ")}{reasonOf(st.data)}</div>
+                    <div className="text-xs text-zinc-500">{st.status.replace("_", " ")}{reasonOf(st.data)}{s === "approval" && viaOf(st.data)}</div>
                     {st.error && <div className="break-words text-xs text-rose-500">{st.error}</div>}
                   </div>
                 </li>
@@ -187,12 +218,15 @@ export default function MissionControl() {
             })}
           </ol>
         </Card>
+        <LearningCard learning={learning} />
+        </div>
 
         <div className="grid min-w-0 gap-6">
           {awaiting && state.approval && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
               <div className="mb-1 text-sm font-medium">Approval needed: {state.approval.summary}</div>
               <div className="mb-3 text-xs text-zinc-500">Edit the drafts below if you like. Nothing is sent until you approve, and what you approve is what gets sent.</div>
+              <WorkNote work={state.work} code={state.approval.code} />
               <div className="flex gap-2">
                 <button onClick={() => decide("approve")} disabled={!!decided} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50">Approve</button>
                 <button onClick={() => decide("reject")} disabled={!!decided} className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500 disabled:opacity-50">Reject</button>
@@ -201,7 +235,7 @@ export default function MissionControl() {
           )}
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <Card title="Company · why this score">
+            <Card tour="score" title="Company · why this score">
               {qualify ? (
                 <div className="space-y-3">
                   <div className="flex items-baseline justify-between gap-2">
@@ -212,6 +246,21 @@ export default function MissionControl() {
                     <div className={`text-2xl font-semibold tabular-nums ${qualify.qualified ? "text-emerald-500" : "text-rose-500"}`}>{qualify.score}</div>
                   </div>
                   <ul className="list-disc space-y-0.5 pl-5 text-sm text-zinc-600 dark:text-zinc-400">{qualify.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+                  {qualify.learned?.length ? (
+                    <div className="rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-700 dark:text-violet-300">
+                      <div className="mb-0.5 font-medium">Learned from your decisions</div>
+                      <ul className="space-y-0.5">{qualify.learned.map((l) => <li key={l}>{l}</li>)}</ul>
+                    </div>
+                  ) : null}
+                  {qualify.competitor && (
+                    <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-xs text-orange-800 dark:text-orange-200">
+                      <div className="mb-0.5 font-medium">Uses competitor: {qualify.competitor.name} <span className="font-normal opacity-75">· graph8 Radar</span></div>
+                      <div className="opacity-80">{qualify.competitor.evidence}</div>
+                      {qualify.competitor.talkingPoints.length > 0 && (
+                        <ul className="mt-1 list-disc space-y-0.5 pl-4">{qualify.competitor.talkingPoints.map((t) => <li key={t}>{t}</li>)}</ul>
+                      )}
+                    </div>
+                  )}
                   {engagement && (
                     <div className="border-t border-zinc-200 pt-2 dark:border-zinc-800">
                       <div className="mb-1 text-xs font-medium text-zinc-500">What they engaged with</div>
@@ -222,7 +271,7 @@ export default function MissionControl() {
               ) : <Empty />}
             </Card>
 
-            <Card title="Buying committee">
+            <Card tour="committee" title="Buying committee">
               {committee?.members.length ? (
                 <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
                   {committee.members.map((m) => (
@@ -239,7 +288,7 @@ export default function MissionControl() {
             </Card>
           </div>
 
-          <Card title="AI-drafted messages">
+          <Card tour="drafts" title="AI-drafted messages">
             {shownDrafts.length ? (
               <div className="grid gap-3 md:grid-cols-2">
                 {shownDrafts.map((d, i) => (
@@ -304,7 +353,7 @@ export default function MissionControl() {
             </Card>
           </div>
 
-          <Card title="Deal + next step">
+          <Card tour="deal" title="Deal + next step">
             {deal ? (
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <div className="min-w-0">
@@ -325,6 +374,7 @@ export default function MissionControl() {
           </Card>
         </div>
       </div>
+      <Tour open={tourOpen} onClose={closeTour} />
     </main>
   );
 }
@@ -347,8 +397,8 @@ function Summary(p: { signals?: number; company?: string; people?: number; draft
 }
 
 /** "This weekend: 40 clicks → 5 companies → 3 good fits → 12 decision-makers → 6 emails ready". */
-function MondayPanel({ data, selected, onSelect }: { data: { batch?: BatchInfo; runs: RunSummary[] }; selected: string | null; onSelect: (id: string) => void }) {
-  const { batch, runs } = data;
+function MondayPanel({ data, selected, onSelect }: { data: BatchState; selected: string | null; onSelect: (id: string) => void }) {
+  const { batch, runs, brief } = data;
   const fits = runs.filter((r) => r.qualified);
   const sum = (k: "people" | "drafts" | "sent") => runs.reduce((n, r) => n + r[k], 0);
   const waiting = runs.filter((r) => r.status === "awaiting_approval").length;
@@ -382,6 +432,13 @@ function MondayPanel({ data, selected, onSelect }: { data: { batch?: BatchInfo; 
           </li>
         ))}
       </ol>
+      {brief && (
+        <div className={`mb-3 rounded-lg px-3 py-2 text-xs ${brief.status === "done" ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-200" : brief.status === "failed" ? "bg-rose-500/10 text-rose-700 dark:text-rose-300" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-400"}`}>
+          {brief.status === "done" ? <>Monday brief posted to graph8 Work <span className="font-mono">#{brief.channel}</span> ✓</>
+            : brief.status === "failed" ? <>Couldn&apos;t post the brief to graph8 Work: {brief.error}</>
+            : <>Monday brief ready ({brief.reason}). On the live system it&apos;s posted to graph8 Work.</>}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm">
           <thead>
@@ -421,14 +478,53 @@ function ModeBadge({ mode }: { mode: Mode }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>{label}</span>;
 }
 
+/** Approval request mirrored into graph8 Work: reply "approve CODE" there (web or mobile). */
+function WorkNote({ work, code }: { work?: WorkPost; code?: string }) {
+  if (!code) return null;
+  if (work?.status === "done") {
+    return (
+      <div className="mb-3 rounded-lg bg-white/60 px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-300">
+        Also posted to graph8 Work <span className="font-mono">#{work.channel}</span>. Reply <span className="rounded bg-zinc-200 px-1 font-mono dark:bg-zinc-800">approve {code}</span> or <span className="rounded bg-zinc-200 px-1 font-mono dark:bg-zinc-800">reject {code}</span> from the Work app, even on your phone.
+      </div>
+    );
+  }
+  if (work?.status === "failed") return <div className="mb-3 text-xs text-rose-500">Couldn&apos;t post to graph8 Work: {work.error}. Approve here instead.</div>;
+  return <div className="mb-3 text-xs text-zinc-500">On the live system this request is also posted to graph8 Work, where replying <span className="font-mono">approve {code}</span> decides it.</div>;
+}
+
+/** What the desk has learned from your approve / reject / edit decisions. */
+function LearningCard({ learning }: { learning: Learning | null }) {
+  return (
+    <Card tour="learning" title="Learning from you">
+      {learning?.decisions ? (
+        <div className="space-y-2 text-sm">
+          <div className="flex gap-3 text-xs text-zinc-500">
+            <span><b className="text-emerald-600 dark:text-emerald-400">{learning.approved}</b> approved</span>
+            <span><b className="text-rose-500">{learning.rejected}</b> rejected</span>
+            <span><b className="text-zinc-700 dark:text-zinc-300">{learning.edited}</b> edited</span>
+          </div>
+          {learning.lessons.length ? (
+            <ul className="space-y-1">{learning.lessons.map((l) => <li key={l} className="rounded-md bg-violet-500/10 px-2 py-1 text-xs text-violet-700 dark:text-violet-300">{l}</li>)}</ul>
+          ) : <p className="text-xs text-zinc-500">A lesson needs 2 similar decisions. Keep approving and rejecting.</p>}
+        </div>
+      ) : <p className="text-sm text-zinc-400">Approve or reject a few companies and the desk will adjust its scoring and writing.</p>}
+    </Card>
+  );
+}
+
+function viaOf(data: unknown) {
+  const via = (data as { via?: string } | undefined)?.via;
+  return via === "graph8 Work" ? " · via graph8 Work" : "";
+}
+
 function reasonOf(data: unknown) {
   const r = (data as { reason?: string } | undefined)?.reason;
   return r ? ` · ${r}` : "";
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, tour }: { title: string; children: React.ReactNode; tour?: string }) {
   return (
-    <section className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
+    <section data-tour={tour} className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
       <h2 className="mb-3 truncate text-xs font-semibold uppercase tracking-wider text-zinc-500">{title}</h2>
       {children}
     </section>

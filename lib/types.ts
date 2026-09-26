@@ -5,7 +5,7 @@ export type StepStatus = "pending" | "running" | "done" | "failed" | "skipped" |
 export interface PipelineEvent {
   id: number;
   runId: string;
-  step: StepName | "run" | "webhook" | "batch";
+  step: StepName | "run" | "webhook" | "batch" | "work";
   status: StepStatus;
   data?: unknown;
   error?: string;
@@ -30,7 +30,14 @@ export interface EngagementSignal { source: "newsletter" | "website" | "link"; d
 export interface EngagementOutput { domain: string; companyName?: string; signals: EngagementSignal[] }
 
 export interface CompanyProfile { domain: string; name: string; industry?: string; employeeCount?: string; linkedinUrl?: string; description?: string }
-export interface QualifyOutput { company: CompanyProfile; score: number; qualified: boolean; reasons: string[] }
+/** A Radar competitor the prospect appears to use, with battle-card talking points. */
+export interface CompetitorHit { name: string; domain?: string; evidence: string; talkingPoints: string[] }
+export interface QualifyOutput {
+  company: CompanyProfile; score: number; qualified: boolean; reasons: string[];
+  competitor?: CompetitorHit;
+  /** Score changes the desk learned from past approve/reject decisions. */
+  learned?: string[];
+}
 
 export interface CommitteeMember {
   firstName: string; lastName: string; email?: string; title?: string; seniority?: string;
@@ -47,7 +54,11 @@ export interface DraftMessage {
 }
 export interface OutreachOutput { drafts: DraftMessage[] }
 
-export interface ApprovalOutput { approvalId: string; decision: "approve" | "reject"; decidedAt: string; edited?: number; drafts?: DraftMessage[] }
+export interface ApprovalOutput {
+  approvalId: string; decision: "approve" | "reject"; decidedAt: string; edited?: number; drafts?: DraftMessage[];
+  /** Where the human decided: the dashboard or a reply in graph8 Work. */
+  via?: "dashboard" | "graph8 Work";
+}
 export interface SendOutput { sequenceId?: string; sent: { contactEmail: string; channel: string; status: string }[]; outbox: Record<string, unknown>[] }
 export interface ReplyOutput {
   replies: { contactEmail: string; inbound?: string; intent?: "interested" | "not_interested" | "question" | "out_of_office"; draft: string }[];

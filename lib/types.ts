@@ -5,7 +5,7 @@ export type StepStatus = "pending" | "running" | "done" | "failed" | "skipped" |
 export interface PipelineEvent {
   id: number;
   runId: string;
-  step: StepName | "run" | "webhook";
+  step: StepName | "run" | "webhook" | "batch";
   status: StepStatus;
   data?: unknown;
   error?: string;
@@ -47,7 +47,7 @@ export interface DraftMessage {
 }
 export interface OutreachOutput { drafts: DraftMessage[] }
 
-export interface ApprovalOutput { approvalId: string; decision: "approve" | "reject"; decidedAt: string }
+export interface ApprovalOutput { approvalId: string; decision: "approve" | "reject"; decidedAt: string; edited?: number; drafts?: DraftMessage[] }
 export interface SendOutput { sequenceId?: string; sent: { contactEmail: string; channel: string; status: string }[]; outbox: Record<string, unknown>[] }
 export interface ReplyOutput {
   replies: { contactEmail: string; inbound?: string; intent?: "interested" | "not_interested" | "question" | "out_of_office"; draft: string }[];
@@ -78,7 +78,12 @@ export class StepNotImplemented extends Error {
 }
 
 /** Thrown when a step deliberately stops the run (e.g. company not qualified, send rejected). */
-export class StopPipeline extends Error {}
+export class StopPipeline extends Error {
+  /** Optional step output to keep on the "skipped" event (e.g. the score of an unqualified company). */
+  constructor(message: string, public data?: object) {
+    super(message);
+  }
+}
 
 /** Thrown when one step can't run (e.g. missing config) but later steps still should. */
 export class SkipStep extends Error {}

@@ -18,11 +18,12 @@ The badge in the header shows the backend's mode: `MOCK MODE`, `SANDBOX`, or `BA
 
 ## What's on screen
 
-- **Summary strip:** signals → qualified company → decision-makers → messages → sent → deal
+- **Run weekend:** processes every company that engaged. The "This weekend" panel shows the funnel (clicks → companies → good fits → decision-makers → emails ready → sent → deals) and a table of companies, with a **Review** button on each one waiting for approval
+- **Run one:** a single company (optionally by domain), with a summary strip
 - **Pipeline:** the 10 steps with live status and why a step was skipped
 - **Company · why this score:** score, each reason behind it, and what the team engaged with
 - **Buying committee:** people found, tagged economic buyer / champion / influencer / user
-- **AI-drafted messages:** each draft, marked as graph8 AI or template, with the Approve / Reject gate
+- **AI-drafted messages:** each draft, marked as graph8 AI or template. While waiting for approval they're editable, and what you approve is what gets sent
 - **Sandbox outbox, Reply + call, Deal + next step,** and a raw event log
 - **Reset demo:** restores the sandbox snapshot so a live demo never gets stuck
 

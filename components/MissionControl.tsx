@@ -22,6 +22,8 @@ const STATUS_STYLE: Record<StepStatus, string> = {
   awaiting_approval: "bg-amber-500 animate-pulse",
 };
 
+type Mode = "mock" | "sandbox" | "live" | "offline";
+
 interface ApprovalRequest { approvalId: string; summary: string; drafts: DraftMessage[] }
 
 interface BatchInfo { batchId: string; totalClicks: number; freemail: number; domains: string[]; runIds: string[] }
@@ -36,7 +38,7 @@ const RUN_STATUS: Record<string, string> = {
 };
 
 export default function MissionControl() {
-  const [mode, setMode] = useState<"mock" | "sandbox" | "offline" | null>(null);
+  const [mode, setMode] = useState<Mode | null>(null);
   const [domain, setDomain] = useState("");
   const [runId, setRunId] = useState<string | null>(null);
   const [events, setEvents] = useState<PipelineEvent[]>([]);
@@ -48,7 +50,7 @@ export default function MissionControl() {
   const [edits, setEdits] = useState<Record<string, DraftMessage[]>>({}); // approvalId -> edited drafts
 
   useEffect(() => {
-    api<{ mode: "mock" | "sandbox" }>("/api/health").then((h) => setMode(h.mode)).catch(() => setMode("offline"));
+    api<{ mode: Mode }>("/api/health").then((h) => setMode(h.mode)).catch(() => setMode("offline"));
   }, []);
 
   useEffect(() => {
@@ -409,9 +411,9 @@ function MondayPanel({ data, selected, onSelect }: { data: { batch?: BatchInfo; 
   );
 }
 
-function ModeBadge({ mode }: { mode: "mock" | "sandbox" | "offline" }) {
-  const style = { mock: "bg-violet-500/15 text-violet-600 dark:text-violet-300", sandbox: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", offline: "bg-rose-500/15 text-rose-600 dark:text-rose-300" }[mode];
-  const label = { mock: "MOCK MODE", sandbox: "SANDBOX", offline: "BACKEND OFFLINE" }[mode];
+function ModeBadge({ mode }: { mode: Mode }) {
+  const style = { mock: "bg-violet-500/15 text-violet-600 dark:text-violet-300", sandbox: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", live: "bg-amber-500/15 text-amber-700 dark:text-amber-300", offline: "bg-rose-500/15 text-rose-600 dark:text-rose-300" }[mode];
+  const label = { mock: "MOCK MODE", sandbox: "SANDBOX", live: "LIVE · SENDS HELD", offline: "BACKEND OFFLINE" }[mode];
   return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>{label}</span>;
 }
 

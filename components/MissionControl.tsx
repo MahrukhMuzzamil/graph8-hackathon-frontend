@@ -26,7 +26,7 @@ type Mode = "mock" | "sandbox" | "live" | "offline";
 
 interface ApprovalRequest { approvalId: string; summary: string; drafts: DraftMessage[] }
 
-interface BatchInfo { batchId: string; totalClicks: number; freemail: number; domains: string[]; runIds: string[] }
+interface BatchInfo { batchId: string; totalClicks: number; freemail: number; nonBuyer?: number; domains: string[]; runIds: string[]; demo?: boolean }
 interface RunSummary {
   runId: string; domain?: string; company?: string; score?: number; qualified?: boolean;
   people: number; drafts: number; sent: number; deal?: string; status: string; approvalId?: string; currentStep?: string;
@@ -361,9 +361,13 @@ function MondayPanel({ data, selected, onSelect }: { data: { batch?: BatchInfo; 
   return (
     <section className="mb-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">This weekend</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          This weekend
+          {batch?.demo && <span className="ml-2 rounded bg-sky-500/15 px-1.5 py-0.5 normal-case tracking-normal text-sky-700 dark:text-sky-300" title="Your graph8 org has no click history yet, so these clicks are demo data. Everything after them runs on real graph8 data.">demo clicks · real graph8 data</span>}
+        </h2>
         <span className="text-xs text-zinc-500">
           {batch?.freemail ? `${batch.freemail} personal-email clicks skipped · ` : ""}
+          {batch?.nonBuyer ? `${batch.nonBuyer} student/government skipped · ` : ""}
           {waiting ? <span className="font-medium text-amber-600 dark:text-amber-400">{waiting} waiting for your approval</span> : "no approvals pending"}
         </span>
       </div>

@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_URL, api } from "@/lib/api";
 import {
-  STEP_NAMES, type CallOutput, type CommitteeOutput, type DealOutput, type DraftMessage, type EngagementOutput,
-  type PipelineEvent, type QualifyOutput, type ReplyOutput, type SendOutput, type StepName, type StepStatus,
+  STEP_NAMES, type CallOutput, type CommitteeOutput, type CompetitorIntel, type DealOutput, type DraftMessage,
+  type EngagementOutput, type OutreachOutput, type PipelineEvent, type QualifyOutput, type ReplyOutput,
+  type SendOutput, type StepName, type StepStatus,
 } from "@/lib/types";
 
 const LABELS: Record<StepName, string> = {
@@ -86,7 +87,9 @@ export default function MissionControl() {
   const engagement = out<EngagementOutput>("engagement");
   const qualify = (state.steps.qualify.data as QualifyOutput | undefined)?.company ? (state.steps.qualify.data as QualifyOutput) : undefined;
   const committee = out<CommitteeOutput>("committee");
-  const drafts = out<{ drafts?: DraftMessage[] }>("approval")?.drafts ?? out<{ drafts: DraftMessage[] }>("outreach")?.drafts ?? [];
+  const outreach = out<OutreachOutput>("outreach");
+  const drafts = out<{ drafts?: DraftMessage[] }>("approval")?.drafts ?? outreach?.drafts ?? [];
+  const competitors = outreach?.competitors?.length ? outreach.competitors : undefined;
   const send = out<SendOutput>("send");
   const reply = out<ReplyOutput>("reply");
   const call = out<CallOutput>("call");
@@ -240,13 +243,19 @@ export default function MissionControl() {
           </div>
 
           <Card title="AI-drafted messages">
+            {competitors && <CompetitorIntelPanel competitors={competitors} />}
             {shownDrafts.length ? (
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className={`grid gap-3 md:grid-cols-2 ${competitors ? "mt-3" : ""}`}>
                 {shownDrafts.map((d, i) => (
                   <div key={i} className={`rounded-lg border p-3 ${awaiting && !decided ? "border-amber-500/40" : "border-zinc-200 dark:border-zinc-800"}`}>
                     <div className="mb-1 flex items-center justify-between gap-2 text-xs text-zinc-500">
                       <span className="truncate">{d.channel.replace("_", " ")} → {d.contactEmail}</span>
-                      {d.source && <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">{d.source === "graph8" ? "graph8 AI" : "template"}</span>}
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {competitors?.[0] && (
+                          <span className="rounded bg-orange-500/15 px-1.5 py-0.5 text-orange-700 dark:text-orange-300">vs {competitors[0].name}</span>
+                        )}
+                        {d.source && <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">{d.source === "graph8" ? "graph8 AI" : "template"}</span>}
+                      </span>
                     </div>
                     {awaiting && !decided ? (
                       <>
@@ -266,7 +275,7 @@ export default function MissionControl() {
                   </div>
                 ))}
               </div>
-            ) : <Empty />}
+            ) : competitors ? null : <Empty />}
           </Card>
 
           <div className="grid gap-6 xl:grid-cols-2">
@@ -408,6 +417,36 @@ function MondayPanel({ data, selected, onSelect }: { data: { batch?: BatchInfo; 
         </table>
       </div>
     </section>
+  );
+}
+
+/** Battle-card chrome from outreach SSE `data.competitors` — omit entirely when empty. */
+function CompetitorIntelPanel({ competitors }: { competitors: CompetitorIntel[] }) {
+  return (
+    <div className="space-y-2">
+      {competitors.map((c) => (
+        <div key={c.competitorId} className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-3">
+          <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-orange-500/15 px-2 py-0.5 text-sm font-medium text-orange-800 dark:text-orange-200">
+              vs {c.name}
+            </span>
+            {c.domain && <span className="text-xs text-zinc-500">{c.domain}</span>}
+            <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+              {c.confidence} confidence
+            </span>
+            <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+              {c.source === "radar" ? "Radar" : "mock"}
+            </span>
+          </div>
+          <p className="mb-2 text-xs text-zinc-500">{c.matchedOn}</p>
+          {c.talkingPoints.length > 0 && (
+            <ul className="list-disc space-y-0.5 pl-4 text-sm text-zinc-700 dark:text-zinc-300">
+              {c.talkingPoints.map((t) => <li key={t}>{t}</li>)}
+            </ul>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 

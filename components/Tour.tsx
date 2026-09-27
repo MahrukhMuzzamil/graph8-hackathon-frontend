@@ -7,15 +7,14 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 export interface TourStep { target: string; title: string; body: string }
 
 export const TOUR_STEPS: TourStep[] = [
-  { target: "mode", title: "Welcome to the Revenue Desk", body: "It turns weekend newsletter clicks and site visits into ready-to-approve sales opportunities. This badge shows where it runs: live graph8 data with sends held, or demo data." },
-  { target: "run-weekend", title: "1 · Run the weekend", body: "One click processes every company that engaged. Personal emails and students are dropped before any paid lookup. \"Run one\" does a single domain." },
-  { target: "weekend", title: "2 · The Monday brief", body: "The funnel from clicks to emails ready, and every company with its score. The same brief is posted to your graph8 Work channel." },
-  { target: "pipeline", title: "3 · Watch the agent work", body: "Ten steps, each on graph8: engagement, scoring, buying committee, CRM, AI outreach, your approval, send, reply, call, deal." },
-  { target: "score", title: "4 · Why this score", body: "Every score comes with its reasons: size, industry, hiring, intent, what their team read. If they use a Radar competitor, you'll see it here too." },
-  { target: "committee", title: "5 · The real decision-makers", body: "The reader is often junior. The desk finds the CTO or VP from graph8's 700M-person database and tags who signs and who champions." },
-  { target: "drafts", title: "6 · You approve, the desk sends", body: "graph8's AI writes each email around the topic their team read. Edit anything, then Approve or Reject, here or by replying in graph8 Work." },
-  { target: "learning", title: "7 · It learns from you", body: "Every approve, reject and edit teaches the desk. Companies you keep rejecting score lower next weekend; drafts you keep shortening get shorter." },
-  { target: "deal", title: "8 · A real opportunity", body: "After approval: the deal is created in the graph8 CRM with a suggested next step. That's the whole Monday, in two minutes." },
+  { target: "nav", title: "Welcome to Revenue Desk", body: "It turns weekend newsletter clicks and site visits into ready-to-approve sales opportunities on graph8. Today, Approvals and Companies are where the work happens." },
+  { target: "run-weekend", title: "1 · Run the weekend", body: "One click checks every company that engaged. Personal emails and students are dropped before any paid lookup. Or type one domain and press Run one." },
+  { target: "kpis", title: "2 · The Monday brief", body: "Clicks → companies → decision-makers → drafted emails → pipeline, with the time it took. The same brief is posted to your graph8 Work channel." },
+  { target: "nav-approvals", title: "3 · Approve like an inbox", body: "Everything waiting for a human, one at a time. Edit the drafts, then Approve or Reject. Keyboard: J/K to move, A to approve, R to reject. Or reply 'approve CODE' in graph8 Work from your phone." },
+  { target: "nav-companies", title: "4 · Every company, explained", body: "Open any company for its fit score and the reasons, the buying committee from graph8's 700M contacts, graph8 Radar competitor signals, the AI emails, and the deal." },
+  { target: "nav-activity", title: "5 · Watch the agent work", body: "A live feed of every step on graph8: scoring, CRM writes, AI drafts, approvals, emails sent, calls placed, deals created." },
+  { target: "nav-learning", title: "6 · It learns from you", body: "Industries you keep rejecting score lower next weekend; drafts you keep shortening get shorter." },
+  { target: "nav-settings", title: "7 · Connected to graph8", body: "API and SDK, CRM deals, your mailbox, the voice agent, graph8 Work and Radar. Prospects are never contacted: emails go to your own inbox and calls to your own phone." },
 ];
 
 const PAD = 8;

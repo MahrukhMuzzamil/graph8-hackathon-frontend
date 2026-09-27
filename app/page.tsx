@@ -1,5 +1,5 @@
-import MissionControl from "@/components/MissionControl";
+import RevenueDesk from "@/components/desk/RevenueDesk";
 
 export default function Page() {
-  return <MissionControl />;
+  return <RevenueDesk />;
 }

@@ -3,83 +3,72 @@
 /* Class-based dark mode so the toggle works (not only OS preference). */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Neutral product palette with one accent (graph8 purple). Status colours are used sparingly,
+ * as small dots and text, never as big coloured panels.
+ */
 :root {
-  /* Warm cream light theme */
-  --background: #f7f2e7;
-  --foreground: #2b2620;
-  --surface: #fffdf8;
-  --surface-muted: #faf6ee;
-  --header-tint: #f3ead8;
-  --border: #e8e0d0;
-  --border-subtle: #efe8da;
-  --muted: #6b6355;
-  --muted-soft: #8a8170;
-  /* Cool = data / status */
-  --accent: #1d6a8a;
-  --accent-hover: #175872;
-  --accent-soft: #e8f3f7;
-  /* Primary action = green */
-  --cta: #1f7a4d;
-  --cta-hover: #18633e;
-  --ring: #1f7a4d;
-  --score: #059669;
-  --warn: #d97706;
+  --background: #fafafa;
+  --foreground: #0a0a0b;
+  --surface: #ffffff;
+  --surface-muted: #f4f4f5;
+  --header-tint: #ffffff;
+  --border: #e4e4e7;
+  --border-subtle: #efeff1;
+  --muted: #6b6b76;
+  --muted-soft: #9d9da8;
+
+  --accent: #6d28d9;
+  --accent-hover: #5b21b6;
+  --accent-soft: #f5f3ff;
+
+  --cta: #6d28d9;
+  --cta-hover: #5b21b6;
+  --ring: #6d28d9;
+  --score: #15803d;
+  --warn: #b45309;
   --danger: #dc2626;
   --danger-hover: #b91c1c;
-  /* Run buttons — same in light & dark */
-  --btn-run: #1d6a8a;
-  --btn-run-hover: #175872;
-  --btn-weekend: #1f7a4d;
-  --btn-weekend-hover: #18633e;
-  --shadow-warm: 0 1px 2px rgba(139, 108, 67, 0.08), 0 4px 16px rgba(139, 108, 67, 0.06);
-  --pending-dot: #d4c9b4;
-  /* Blue → green spectrum (light) */
-  --spectrum-0: #1d4ed8;
-  --spectrum-1: #0284c7;
-  --spectrum-2: #0891b2;
-  --spectrum-3: #0d9488;
-  --spectrum-4: #059669;
-  --spectrum-5: #16a34a;
-  --spectrum-6: #15803d;
-  --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+
+  --btn-run: #18181b;
+  --btn-run-hover: #27272a;
+  --btn-weekend: #6d28d9;
+  --btn-weekend-hover: #5b21b6;
+
+  --shadow-warm: 0 1px 2px rgba(10, 10, 11, 0.04);
+  --pending-dot: #d4d4d8;
 }
 
 .dark {
-  /* Darker navy */
-  --background: #050a12;
-  --foreground: #e8eef8;
-  --surface: #0c1322;
-  --surface-muted: #121a2c;
-  --header-tint: #0a1220;
-  --border: #1e2d45;
-  --border-subtle: #162236;
-  --muted: #8b9bb8;
-  --muted-soft: #6b7a94;
-  --accent: #1d6a8a;
-  --accent-hover: #175872;
-  --accent-soft: #0f1e30;
-  --cta: #1f7a4d;
-  --cta-hover: #18633e;
-  --ring: #1d6a8a;
-  --score: #6ee7a8;
-  --warn: #f5a623;
-  --danger: #ef4444;
-  --danger-hover: #dc2626;
-  --btn-run: #1d6a8a;
-  --btn-run-hover: #175872;
-  --btn-weekend: #1f7a4d;
-  --btn-weekend-hover: #18633e;
-  --shadow-warm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 32px rgba(0, 0, 0, 0.55);
-  --pending-dot: #2a3d58;
-  /* Brighter blue→green spectrum on navy */
-  --spectrum-0: #60a5fa;
-  --spectrum-1: #38bdf8;
-  --spectrum-2: #22d3ee;
-  --spectrum-3: #2dd4bf;
-  --spectrum-4: #34d399;
-  --spectrum-5: #4ade80;
-  --spectrum-6: #6ee7a8;
-  --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  --background: #09090b;
+  --foreground: #fafafa;
+  --surface: #111113;
+  --surface-muted: #18181b;
+  --header-tint: #111113;
+  --border: #27272a;
+  --border-subtle: #1f1f23;
+  --muted: #a1a1aa;
+  --muted-soft: #71717a;
+
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-soft: #1e1533;
+
+  --cta: #8b5cf6;
+  --cta-hover: #7c3aed;
+  --ring: #a78bfa;
+  --score: #4ade80;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --danger-hover: #ef4444;
+
+  --btn-run: #fafafa;
+  --btn-run-hover: #e4e4e7;
+  --btn-weekend: #7c3aed;
+  --btn-weekend-hover: #6d28d9;
+
+  --shadow-warm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --pending-dot: #3f3f46;
 }
 
 @theme inline {
@@ -108,76 +97,47 @@
   --color-pending-dot: var(--pending-dot);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --radius-card: 12px;
+  --radius-card: 10px;
 }
 
-html {
-  color-scheme: light;
-}
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
 
-html.dark {
-  color-scheme: dark;
-}
-
-/* Smooth theme switch — only while .theme-animating is on (set by ThemeToggle). */
-html.theme-animating,
-html.theme-animating body,
-html.theme-animating .mc-card,
-html.theme-animating header,
-html.theme-animating main,
-html.theme-animating section,
-html.theme-animating div,
-html.theme-animating button,
-html.theme-animating input,
-html.theme-animating textarea,
-html.theme-animating span,
-html.theme-animating p,
-html.theme-animating li,
-html.theme-animating td,
-html.theme-animating th,
-html.theme-animating h1,
-html.theme-animating h2,
-html.theme-animating pre,
-html.theme-animating ol,
-html.theme-animating ul {
-  transition:
-    background-color 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease,
-    fill 180ms ease,
-    stroke 180ms ease;
+/* Smooth theme switch, only while .theme-animating is on (set by ThemeToggle). */
+html.theme-animating * {
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 body {
-  background-color: var(--background);
-  background-image:
-    var(--noise),
-    radial-gradient(ellipse 90% 55% at 15% -10%, rgba(31, 122, 77, 0.08), transparent 55%),
-    radial-gradient(ellipse 70% 45% at 90% 0%, rgba(29, 106, 138, 0.07), transparent 50%),
-    linear-gradient(180deg, #faf6ee 0%, var(--background) 40%);
-  background-attachment: fixed;
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
   min-height: 100%;
 }
 
-html.dark body {
-  background-image:
-    var(--noise),
-    radial-gradient(ellipse 80% 50% at 20% -15%, rgba(29, 106, 138, 0.14), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(31, 122, 77, 0.08), transparent 50%),
-    linear-gradient(180deg, #08101c 0%, var(--background) 50%);
-}
+::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 
-/* Shared soft card surface used across Mission Control. */
+/* Shared card surface. */
 .mc-card {
   border-radius: var(--radius-card);
   border: 1px solid var(--border);
   background: var(--surface);
-  box-shadow: var(--shadow-warm);
 }
 
-.shadow-warm {
-  box-shadow: var(--shadow-warm);
+.shadow-warm { box-shadow: var(--shadow-warm); }
+
+/* Quiet scrollbars inside panels. */
+.scroll-quiet { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+kbd {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--muted);
 }

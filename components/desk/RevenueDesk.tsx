@@ -13,7 +13,7 @@ import { exportCsv, type BatchInfo, type BatchState, type Learning, type Mode, t
 import { ActivityView, LearningView, SettingsView, type FeedItem } from "./OtherViews";
 import { deriveRun } from "./run";
 import { AccountsTable, TodayView } from "./TodayView";
-import { Button, EmptyState, Icon, Status } from "./ui";
+import { BrandMark, Button, EmptyState, Icon, Status, Wordmark } from "./ui";
 
 const TITLES: Record<View, { title: string; sub: string }> = {
   today: { title: "Today", sub: "This weekend's engagement, turned into ready-to-approve pipeline" },
@@ -232,9 +232,9 @@ export default function RevenueDesk() {
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-border bg-surface md:flex">
         <div className="flex items-center gap-2.5 px-4 py-4">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-[13px] font-bold text-white">A</span>
+          <BrandMark className="h-7 w-7 shrink-0" />
           <div className="leading-tight">
-            <div className="text-[13px] font-semibold">Revenue Desk</div>
+            <Wordmark className="text-[15px]" />
             <div className="text-[11px] text-muted-soft">on graph8</div>
           </div>
         </div>
@@ -243,7 +243,8 @@ export default function RevenueDesk() {
             const active = view === n.id;
             return (
               <button key={n.id} onClick={() => go(n.id)} data-tour={`nav-${n.id}`}
-                className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] ${active ? "bg-surface-muted font-medium text-foreground" : "text-muted hover:bg-surface-muted hover:text-foreground"}`}>
+                className={`relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] ${active ? "bg-surface-muted font-medium text-foreground" : "text-muted hover:bg-surface-muted hover:text-foreground"}`}>
+                {active && <span className="absolute -left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-accent" aria-hidden />}
                 <n.icon className="h-4 w-4" />
                 <span className="flex-1 text-left">{n.label}</span>
                 {n.count ? <span className={`rounded px-1.5 text-[11px] tabular-nums ${n.id === "approvals" ? "bg-accent text-white" : "text-muted-soft"}`}>{n.count}</span> : null}

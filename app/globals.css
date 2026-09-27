@@ -4,73 +4,77 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Neutral product palette with one accent (graph8 purple). Status colours are used sparingly,
+ * Warm cream and ink, a gold brand mark and one blue accent. Status colours are used sparingly,
  * as small dots and text, never as big coloured panels.
  */
 :root {
-  --background: #fafafa;
-  --foreground: #0a0a0b;
-  --surface: #ffffff;
-  --surface-muted: #f4f4f5;
-  --header-tint: #ffffff;
-  --border: #e4e4e7;
-  --border-subtle: #efeff1;
-  --muted: #6b6b76;
-  --muted-soft: #9d9da8;
+  /* Warm cream + ink, gold brand, blue accent */
+  --background: #f5efe3;
+  --foreground: #1f1a14;
+  --surface: #fbf8f1;
+  --surface-muted: #efe7d8;
+  --header-tint: #fbf8f1;
+  --border: #e3d9c6;
+  --border-subtle: #ece4d4;
+  --muted: #6e6557;
+  --muted-soft: #9a907f;
 
-  --accent: #6d28d9;
-  --accent-hover: #5b21b6;
-  --accent-soft: #f5f3ff;
+  --accent: #2f5fd0;
+  --accent-hover: #244ca8;
+  --accent-soft: #e6ecf8;
+  --gold: #c8a55a;
+  --gold-soft: #f1e6cc;
 
-  --cta: #6d28d9;
-  --cta-hover: #5b21b6;
-  --ring: #6d28d9;
-  --score: #15803d;
-  --warn: #b45309;
-  --danger: #dc2626;
-  --danger-hover: #b91c1c;
+  --cta: #2f5fd0;
+  --cta-hover: #244ca8;
+  --ring: #2f5fd0;
+  --score: #3f7d4f;
+  --warn: #b07a1e;
+  --danger: #b4432f;
+  --danger-hover: #963623;
 
-  --btn-run: #18181b;
-  --btn-run-hover: #27272a;
-  --btn-weekend: #6d28d9;
-  --btn-weekend-hover: #5b21b6;
+  --btn-run: #1f1a14;
+  --btn-run-hover: #3a322a;
+  --btn-weekend: #2f5fd0;
+  --btn-weekend-hover: #244ca8;
 
-  --shadow-warm: 0 1px 2px rgba(10, 10, 11, 0.04);
-  --pending-dot: #d4d4d8;
+  --shadow-warm: 0 1px 2px rgba(60, 45, 20, 0.05);
+  --pending-dot: #d6ccb8;
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --surface: #111113;
-  --surface-muted: #18181b;
-  --header-tint: #111113;
-  --border: #27272a;
-  --border-subtle: #1f1f23;
-  --muted: #a1a1aa;
-  --muted-soft: #71717a;
+  --background: #16130f;
+  --foreground: #f3ece0;
+  --surface: #1e1a15;
+  --surface-muted: #27221b;
+  --header-tint: #1e1a15;
+  --border: #342d24;
+  --border-subtle: #2b261f;
+  --muted: #b3a894;
+  --muted-soft: #857b6a;
 
-  --accent: #a78bfa;
-  --accent-hover: #c4b5fd;
-  --accent-soft: #1e1533;
+  --accent: #6f97f0;
+  --accent-hover: #8fb0f5;
+  --accent-soft: #1c2640;
+  --gold: #d6b56c;
+  --gold-soft: #3a3020;
 
-  --cta: #8b5cf6;
-  --cta-hover: #7c3aed;
-  --ring: #a78bfa;
-  --score: #4ade80;
-  --warn: #fbbf24;
-  --danger: #f87171;
-  --danger-hover: #ef4444;
+  --cta: #4f7fe6;
+  --cta-hover: #3d6bd0;
+  --ring: #6f97f0;
+  --score: #7fbf8c;
+  --warn: #e0b35a;
+  --danger: #e07a64;
+  --danger-hover: #cc6450;
 
-  --btn-run: #fafafa;
-  --btn-run-hover: #e4e4e7;
-  --btn-weekend: #7c3aed;
-  --btn-weekend-hover: #6d28d9;
+  --btn-run: #f3ece0;
+  --btn-run-hover: #ded5c5;
+  --btn-weekend: #4f7fe6;
+  --btn-weekend-hover: #3d6bd0;
 
-  --shadow-warm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --pending-dot: #3f3f46;
+  --shadow-warm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --pending-dot: #4a4235;
 }
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -84,6 +88,8 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
   --color-cta: var(--cta);
   --color-cta-hover: var(--cta-hover);
   --color-score: var(--score);

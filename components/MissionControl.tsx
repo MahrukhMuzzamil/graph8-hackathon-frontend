@@ -424,6 +424,11 @@ export default function MissionControl() {
                   {call?.calls.map((c, i) => (
                     <div key={i} className="border-t border-border-subtle pt-2 text-xs text-muted">
                       Call: {c.outcome}{c.grade !== undefined && ` · grade ${c.grade}`}
+                      {c.rehearsal && (
+                        <div className={`mt-1 rounded-md px-2 py-1 ${c.rehearsal.passed === false ? "bg-amber-500/10 text-amber-800 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"}`}>
+                          {c.rehearsal.summary}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

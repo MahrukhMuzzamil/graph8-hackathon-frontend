@@ -75,7 +75,13 @@ export interface SendOutput { sequenceId?: string; sent: { contactEmail: string;
 export interface ReplyOutput {
   replies: { contactEmail: string; inbound?: string; intent?: "interested" | "not_interested" | "question" | "out_of_office"; draft: string }[];
 }
-export interface CallOutput { calls: { contactEmail: string; outcome: string; grade?: number; script?: string }[] }
+export interface CallOutput {
+  calls: {
+    contactEmail: string; outcome: string; grade?: number; script?: string;
+    /** Dry-run of the voice agent on graph8 (no phone number, no cost). */
+    rehearsal?: { ran: boolean; passed?: boolean; tools?: number; grounding?: number; summary: string };
+  }[];
+}
 export interface DealOutput { dealId: string; name: string; amount?: number; nextBestStep: string; taskIds: string[] }
 
 export interface PipelineContext {

@@ -233,6 +233,18 @@ export default function MissionControl() {
     });
   }
 
+  /** One click approves every company waiting for a human (the drafts as written). */
+  async function approveAll(list: RunSummary[]) {
+    if (!list.length) return;
+    const ok = window.confirm(`Approve ${list.length} compan${list.length === 1 ? "y" : "ies"}?\n\nEach one sends the approved email(s) to your inbox, places the AI test call, and creates a deal in graph8. Prospects are never contacted.`);
+    if (!ok) return;
+    pushToast("info", `Approving ${list.length} companies…`, "Emails, calls and deals follow for each.");
+    const results = await Promise.allSettled(list.map((r) => api(`/api/approvals/${r.approvalId}`, { method: "POST", body: JSON.stringify({ decision: "approve" }) })));
+    const failed = results.filter((x) => x.status === "rejected").length;
+    if (failed) pushToast("error", `${failed} approval(s) didn't go through`, "They may have been decided already. Review them individually.");
+    else pushToast("success", `Approved ${list.length} companies`, "Watch the table: each moves to done with a deal.");
+  }
+
   /** Re-runs a failed or stopped company with its original click; the new run replaces it in the table. */
   async function retry(id: string) {
     setError(null); setDecided(null);
@@ -314,7 +326,7 @@ export default function MissionControl() {
 
       <div data-tour="weekend">
         {batch ? (
-          <MondayPanel data={batch} selected={runId} onSelect={selectRun} onRetry={retry} />
+          <MondayPanel data={batch} selected={runId} onSelect={selectRun} onRetry={retry} onApproveAll={approveAll} />
         ) : (
           <Summary
             signals={engagement?.signals.length} company={qualify?.qualified ? qualify.company.name : undefined}
@@ -677,12 +689,20 @@ function BeforeAfter({ data }: { data: BatchState }) {
   if (!batch?.startedAt || !serverNow) return null;
   const ms = Math.max(0, Date.parse(settledAt ?? serverNow) - Date.parse(batch.startedAt));
   const ready = runs.filter((r) => r.qualified && (r.status === "awaiting_approval" || r.status === "done")).length;
+  const deals = runs.filter((r) => r.deal).length;
   const elapsed = ms < 60_000 ? `${Math.round(ms / 1000)}s` : `${Math.floor(ms / 60_000)}m ${String(Math.round((ms % 60_000) / 1000)).padStart(2, "0")}s`;
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[12px] border border-accent/30 bg-accent-soft/60 px-4 py-3">
       <div className="min-w-0 flex-1 text-sm text-foreground">
         <span className="font-semibold">This weekend:</span> {batch.totalClicks} clicks → <span className="font-semibold text-score">{ready} {ready === 1 ? "opportunity" : "opportunities"} ready to approve</span>
         {settledAt ? <> in <span className="font-semibold tabular-nums">{elapsed}</span>.</> : <> · working <span className="tabular-nums">{elapsed}</span>…</>}
+        {ready > 0 && (
+          <div className="mt-0.5 text-xs text-muted">
+            <span className="font-semibold text-foreground tabular-nums">{money(ready * DEAL_VALUE)}</span> potential pipeline
+            {deals > 0 && <> · <span className="font-semibold text-score tabular-nums">{money(deals * DEAL_VALUE)}</span> already in the graph8 CRM</>}
+            <span className="text-muted-soft"> (at {money(DEAL_VALUE)} per deal)</span>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2 text-xs">
         <span className="rounded-md bg-surface px-2 py-1 text-muted line-through decoration-danger/60">By hand: ~2 days</span>
@@ -693,8 +713,33 @@ function BeforeAfter({ data }: { data: BatchState }) {
   );
 }
 
+/** Deal value used for pipeline estimates; matches the backend's DEAL_AMOUNT default. */
+const DEAL_VALUE = 25_000;
+const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+
+/** Who sales should call first. Only good fits get a label. */
+function priorityOf(r: RunSummary): { label: string; cls: string } | null {
+  if (!r.qualified || r.score === undefined) return null;
+  if (r.score >= 70) return { label: "Hot", cls: "bg-danger/15 text-danger" };
+  if (r.score >= 45) return { label: "Warm", cls: "bg-warn/15 text-warn" };
+  return { label: "Cool", cls: "bg-accent/10 text-accent" };
+}
+
+/** The Monday list as a spreadsheet: the one sales will actually use. */
+function exportCsv(data: BatchState) {
+  const rows = [...data.runs].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  const head = ["Company", "Domain", "Score", "Priority", "Decision-makers", "Emails drafted", "Status", "Deal"];
+  const cell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [head, ...rows.map((r) => [r.company ?? r.domain, r.domain, r.score ?? "", priorityOf(r)?.label ?? (r.qualified === false ? "Not a fit" : ""), r.people, r.drafts, r.status.replace(/_/g, " "), r.deal ?? ""])]
+    .map((line) => line.map(cell).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = `monday-pipeline-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
 /** "This weekend: 40 clicks → 5 companies → 3 good fits → 12 decision-makers → 6 emails ready". */
-function MondayPanel({ data, selected, onSelect, onRetry }: { data: BatchState; selected: string | null; onSelect: (id: string) => void; onRetry: (id: string) => void }) {
+function MondayPanel({ data, selected, onSelect, onRetry, onApproveAll }: { data: BatchState; selected: string | null; onSelect: (id: string) => void; onRetry: (id: string) => void; onApproveAll: (runs: RunSummary[]) => void }) {
   const { batch, runs, brief } = data;
   const fits = runs.filter((r) => r.qualified);
   const sum = (k: "people" | "drafts" | "sent") => runs.reduce((n, r) => n + r[k], 0);
@@ -723,6 +768,19 @@ function MondayPanel({ data, selected, onSelect, onRetry }: { data: BatchState; 
           {batch?.nonBuyer ? `${batch.nonBuyer} student/government skipped · ` : ""}
           {waiting ? <span className="font-medium text-warn">{waiting} waiting for your approval</span> : "no approvals pending"}
         </span>
+      </div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {waiting > 0 && (
+          <button onClick={() => onApproveAll(runs.filter((r) => r.status === "awaiting_approval" && r.approvalId))}
+            className="rounded-lg bg-btn-weekend px-3 py-1.5 text-xs font-semibold text-white shadow-warm hover:bg-btn-weekend-hover">
+            Approve all {waiting} good fit{waiting === 1 ? "" : "s"}
+          </button>
+        )}
+        {runs.length > 0 && (
+          <button onClick={() => exportCsv(data)} className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface-muted">
+            Export Monday list (CSV)
+          </button>
+        )}
       </div>
       <ol className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
         {funnel.map((item, i) => {
@@ -768,7 +826,7 @@ function MondayPanel({ data, selected, onSelect, onRetry }: { data: BatchState; 
             {sorted.map((r) => (
               <tr key={r.runId} className={r.runId === selected ? "bg-accent/5" : ""}>
                 <td className="py-1.5 pr-3"><div className="font-medium text-foreground">{r.company ?? r.domain}</div><div className="text-xs text-muted">{r.domain}</div></td>
-                <td className={`py-1.5 pr-3 text-right tabular-nums ${r.qualified ? "text-score" : "text-muted-soft"}`}>{r.score ?? "…"}</td>
+                <td className={`py-1.5 pr-3 text-right tabular-nums ${r.qualified ? "text-score" : "text-muted-soft"}`}>{r.score ?? "…"}{(() => { const p = priorityOf(r); return p ? <span className={`ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-semibold ${p.cls}`}>{p.label}</span> : null; })()}</td>
                 <td className="py-1.5 pr-3 text-right tabular-nums">{r.people || "—"}</td>
                 <td className="py-1.5 pr-3 text-right tabular-nums">{r.drafts || "—"}</td>
                 <td className={`py-1.5 pr-3 text-xs ${RUN_STATUS[r.status] ?? "text-muted"}`}>

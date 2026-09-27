@@ -64,18 +64,18 @@ export default function Tour({ open, onClose, steps = TOUR_STEPS }: { open: bool
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={step.title}>
       {rect ? (
-        <div className="pointer-events-none fixed rounded-xl ring-2 ring-sky-400 transition-all duration-300"
-          style={{ top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2, boxShadow: "0 0 0 9999px rgba(9,9,11,0.6)" }} />
-      ) : <div className="fixed inset-0 bg-zinc-950/60" />}
-      <div className="fixed w-[min(340px,calc(100vw-32px))] rounded-xl border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-700 dark:bg-zinc-900" style={style}>
-        <div className="mb-1 text-xs text-zinc-400">{i + 1} / {steps.length}</div>
-        <div className="mb-1 font-semibold">{step.title}</div>
-        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">{step.body}</p>
+        <div className="pointer-events-none fixed rounded-[12px] ring-2 ring-cta transition-all duration-300"
+          style={{ top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2, boxShadow: "0 0 0 9999px rgba(43,38,32,0.55)" }} />
+      ) : <div className="fixed inset-0 bg-[#2B2620]/60" />}
+      <div className="mc-card fixed w-[min(340px,calc(100vw-32px))] p-4" style={style}>
+        <div className="mb-1 text-xs text-muted-soft">{i + 1} / {steps.length}</div>
+        <div className="mb-1 font-semibold text-foreground">{step.title}</div>
+        <p className="mb-4 text-sm text-muted">{step.body}</p>
         <div className="flex items-center gap-2">
-          <button onClick={finish} className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">Skip</button>
+          <button onClick={finish} className="text-sm text-muted hover:text-foreground">Skip</button>
           <div className="ml-auto flex gap-2">
-            {i > 0 && <button onClick={() => setI(i - 1)} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Back</button>}
-            <button onClick={() => (last ? finish() : setI(i + 1))} className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-500">{last ? "Done" : "Next"}</button>
+            {i > 0 && <button onClick={() => setI(i - 1)} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface-muted">Back</button>}
+            <button onClick={() => (last ? finish() : setI(i + 1))} className="rounded-lg bg-cta px-3 py-1.5 text-sm font-medium text-white hover:bg-cta-hover">{last ? "Done" : "Next"}</button>
           </div>
         </div>
       </div>

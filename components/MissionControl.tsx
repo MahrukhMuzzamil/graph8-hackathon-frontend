@@ -421,7 +421,13 @@ export default function MissionControl() {
                       <li key={i} className="flex justify-between gap-2"><span className="truncate">{s.channel} → {s.contactEmail}</span><span className="shrink-0 text-xs text-score">{s.status}</span></li>
                     ))}
                   </ul>
-                  <div className="text-xs text-muted">{send.outbox.length} item(s) caught by the sandbox. Nothing reached real people.</div>
+                  <div className="text-xs text-muted">
+                    {mode === "live"
+                      ? send.outbox.some((o) => (o as { workCopy?: boolean }).workCopy)
+                        ? <>{send.outbox.length} approved message(s) held on the live system. A copy of each is in graph8 Work <span className="font-mono">#autopilot-revenue-desk</span>. Prospects were not contacted.</>
+                        : <>{send.outbox.length} approved message(s) held on the live system. Prospects were not contacted.</>
+                      : <>{send.outbox.length} item(s) caught by the sandbox. Nothing reached real people.</>}
+                  </div>
                 </div>
               ) : <Empty text={finished ? "Not sent." : undefined} />}
             </Card>

@@ -200,7 +200,7 @@ export default function RevenueDesk() {
 
   async function reset() {
     setBusy(true); setError(null);
-    await api("/api/demo/reset", { method: "POST" }).then(() => pushToast("info", "Reset", "Ready for a fresh run. Records in graph8 are kept.")).catch((e) => setError((e as Error).message));
+    await api("/api/demo/reset", { method: "POST" }).then(() => pushToast("success", "Dashboard cleared", "Ready for a fresh run. Deals and contacts in graph8 are kept.")).catch((e) => setError((e as Error).message));
     setRunId(null); setEvents([]); setDecided(null); setBatchId(null); setBatch(null); setEdits({}); setFeed([]); setView("today"); setBusy(false);
   }
 

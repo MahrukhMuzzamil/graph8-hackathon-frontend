@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Tour from "@/components/Tour";
+import { ToastStack, useToasts } from "@/components/Toasts";
+import { toastFor } from "@/lib/toast-messages";
 import ThemeToggle from "@/components/ThemeToggle";
 import { API_URL, api } from "@/lib/api";
 import {
@@ -79,6 +81,18 @@ export default function MissionControl() {
   const [edits, setEdits] = useState<Record<string, DraftMessage[]>>({}); // approvalId -> edited drafts
   const [learning, setLearning] = useState<Learning | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
+  const [account, setAccount] = useState<string | null>(null);
+
+  // Signed-in user (deployed with sign-in); nothing shown when sign-in is off (local dev).
+  useEffect(() => {
+    fetch("/auth/session").then((r) => r.json()).then((s: { enabled?: boolean; user?: string }) => { if (s.enabled && s.user) setAccount(s.user); }).catch(() => {});
+  }, []);
+
+  async function signOut() {
+    await fetch("/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = "/login";
+  }
 
   useEffect(() => {
     api<{ mode: Mode }>("/api/health").then((h) => setMode(h.mode)).catch(() => setMode("offline"));
@@ -105,19 +119,49 @@ export default function MissionControl() {
   useEffect(() => {
     if (!runId) return;
     const es = new EventSource(`${API_URL}/api/events?runId=${runId}`);
-    es.onmessage = (m) => setEvents((prev) => [...prev, JSON.parse(m.data) as PipelineEvent]);
+    const openedAt = Date.now() - 1500; // replayed history doesn't pop up; only what happens from now on
+    es.onmessage = (m) => {
+      const e = JSON.parse(m.data) as PipelineEvent;
+      setEvents((prev) => [...prev, e]);
+      if (Date.parse(e.timestamp) >= openedAt) {
+        const t = toastFor(e);
+        if (t) pushToast(t.kind, t.title, t.body);
+      }
+    };
     return () => es.close();
-  }, [runId]);
+  }, [runId, pushToast]);
 
   // Poll the per-run summary while a batch is active.
   useEffect(() => {
     if (!batchId) return;
     let alive = true;
-    const tick = () => api<BatchState>(`/api/runs?batchId=${batchId}`).then((s) => alive && setBatch(s)).catch(() => {});
+    // Weekend-wide pop-ups: a company needs approval, one fails, the brief is posted, all done.
+    const seen = new Map<string, string>();
+    let briefSeen = false, settledSeen = false;
+    const tick = () => api<BatchState>(`/api/runs?batchId=${batchId}`).then((s) => {
+      if (!alive) return;
+      setBatch(s);
+      for (const r of s.runs) {
+        const prev = seen.get(r.runId);
+        if (prev !== r.status && prev !== undefined) {
+          const who = r.company ?? r.domain ?? "A company";
+          if (r.status === "awaiting_approval") pushToast("warn", `Approval needed: ${who}`, `Score ${r.score ?? "?"} · ${r.drafts} email(s) drafted. Click Review, or reply in graph8 Work.`);
+          else if (r.status === "failed") pushToast("error", `${who} failed`, "Click Retry on its row.");
+          else if (r.status === "done") pushToast("success", `${who}: done`, r.deal ? `Deal: ${r.deal}` : undefined);
+        }
+        seen.set(r.runId, r.status);
+      }
+      if (s.brief?.status === "done" && !briefSeen) { briefSeen = true; pushToast("info", "Monday brief posted to graph8 Work", `#${s.brief.channel}`); }
+      if (s.settledAt && !settledSeen) {
+        settledSeen = true;
+        const ready = s.runs.filter((r) => r.qualified && (r.status === "awaiting_approval" || r.status === "done")).length;
+        pushToast("success", `Weekend processed: ${ready} ready to approve`, `${s.batch?.totalClicks ?? 0} clicks, ${s.runs.length} companies checked.`);
+      }
+    }).catch(() => {});
     tick();
     const t = setInterval(tick, 1200);
     return () => { alive = false; clearInterval(t); };
-  }, [batchId]);
+  }, [batchId, pushToast]);
 
   const state = useMemo(() => {
     const steps = Object.fromEntries(STEP_NAMES.map((s) => [s, { status: "pending" as StepStatus, data: undefined as unknown, error: undefined as string | undefined }]));
@@ -160,6 +204,7 @@ export default function MissionControl() {
     setBusy(true); setDecided(null); setError(null); setRunId(null); setBatch(null); setEvents([]);
     try {
       const b = await api<BatchInfo>("/api/batch", { method: "POST", body: "{}" });
+      pushToast("info", `Processing ${b.domains.length} companies from ${b.totalClicks} weekend clicks`, `${b.freemail} personal-email and ${b.nonBuyer ?? 0} student/government clicks skipped before any lookup.`);
       setBatchId(b.batchId);
       if (b.runIds[0]) setRunId(b.runIds[0]);
     } catch (e) { setError(`Backend unreachable at ${API_URL}: ${(e as Error).message}`); }
@@ -175,7 +220,8 @@ export default function MissionControl() {
     if (!state.approval) return;
     setDecided(decision);
     const drafts = edits[state.approval.approvalId];
-    await api(`/api/approvals/${state.approval.approvalId}`, { method: "POST", body: JSON.stringify({ decision, drafts }) }).catch((e) => setError((e as Error).message));
+    pushToast("info", decision === "approve" ? "Approving…" : "Rejecting…", decision === "approve" ? (drafts ? "Your edited drafts will be used." : "Sending step starts next.") : "Nothing will be sent.");
+    await api(`/api/approvals/${state.approval.approvalId}`, { method: "POST", body: JSON.stringify({ decision, drafts }) }).catch((e) => { setError((e as Error).message); pushToast("error", "Couldn't record your decision", (e as Error).message); });
   }
 
   function editDraft(i: number, patch: Partial<DraftMessage>) {
@@ -193,12 +239,15 @@ export default function MissionControl() {
     try {
       const { runId: next } = await api<{ runId: string }>(`/api/runs/${id}/retry`, { method: "POST", body: "{}" });
       setEvents([]); setRunId(next);
+      pushToast("info", "Retrying with the same click", "The new run replaces the old row.");
     } catch (e) { setError(`Retry failed: ${(e as Error).message}`); }
   }
 
   async function reset() {
     setBusy(true); setError(null);
-    await api("/api/demo/reset", { method: "POST" }).catch((e) => setError((e as Error).message));
+    await api("/api/demo/reset", { method: "POST" })
+      .then(() => pushToast("info", "Dashboard reset", "Ready for a fresh run. Records already in graph8 are kept."))
+      .catch((e) => setError((e as Error).message));
     setRunId(null); setEvents([]); setDecided(null); setBatchId(null); setBatch(null); setEdits({}); setBusy(false);
   }
 
@@ -235,6 +284,12 @@ export default function MissionControl() {
               <span className="hidden text-xs font-medium sm:inline">Tour</span>
             </button>
             <ThemeToggle />
+            {account && (
+              <button type="button" onClick={signOut} title={`Signed in as ${account}`}
+                className="inline-flex h-9 items-center rounded-lg border border-border bg-surface/70 px-2.5 text-xs font-medium text-muted hover:bg-surface hover:text-foreground">
+                Sign out
+              </button>
+            )}
           </div>
         </div>
         <div className="flex flex-col gap-2 border-t border-border/80 pt-4 sm:flex-row sm:items-center">
@@ -473,6 +528,7 @@ export default function MissionControl() {
         </div>
       </div>
       <Tour open={tourOpen} onClose={closeTour} />
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
 }

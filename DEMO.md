@@ -1,18 +1,20 @@
 # 5-minute demo script
 
-Have open before you start: http://localhost:3000 (backend running, badge says **LIVE · SENDS HELD**), and graph8 in a second tab on CRM → Deals.
+**Open before you start**
+- Laptop: http://13.53.46.132/ signed in (graph8 / hackathon2026), badge says **LIVE · SENDS HELD**. Press **Reset**.
+- Second tab: graph8 → **CRM → Deals**.
+- Phone: graph8 Work → **#Autopilot Revenue Desk** (app.graph8.com), and your Gmail app. Volume on.
 
 | Time | Say | Do |
 |---|---|---|
-| 0:00–0:30 | "Every Monday, marketing sends sales a spreadsheet of everyone who clicked the newsletter. Nobody uses it. Real buyers get ignored." | Show the empty dashboard. |
-| 0:30–1:00 | "Here's this weekend's clicks. Our graph8 org is brand new, so the clicks are demo data. Everything after them is real graph8." | Click **Run weekend**. Point at the funnel and the "demo clicks · real graph8 data" tag. |
-| 1:00–3:00 | "Personal emails and students are dropped before any paid lookup. Each company is enriched and scored, with the reasons shown. For good fits it finds the decision-makers, saves them in the CRM, and graph8's AI writes an email that mentions what their team read." | Watch steps turn green. Click **Review** on a company. Show *Company · why this score* and *Buying committee*. |
-| 2:30–3:00 | "It also checks graph8 Radar: this company uses a competitor, so the email gets a battle-card line." | Point at the orange **Uses competitor** box, if a company shows one. |
-| 3:00–4:00 | "Nothing goes out without a human, and the human doesn't even need our app. The brief and the approvals land in graph8 Work." | Show the Work channel `#autopilot-revenue-desk` on your phone: the Monday brief, then reply **approve CODE** to one company. Back on the dashboard it turns green, "via graph8 Work". Approve another one here after editing a line. Show the **deal + next step**, then the graph8 tab: the deal is really there. |
-| 4:00–4:15 | "And it learns: every approve, reject and edit changes next weekend's scoring." | Point at **Learning from you**. |
-| 4:00–4:30 | "Because this is real data, prospects are never contacted: sends are held. On a warmed-up mailbox they'd go out through the graph8 sequence." | Point at the **LIVE · SENDS HELD** badge. |
-| 4:30–5:00 | "What took a sales team two days now takes two minutes, and the human only clicks approve." | Show the funnel once more. |
+| 0:00–0:30 | "Every Monday, marketing hands sales a spreadsheet of everyone who clicked the newsletter. Nobody uses it, and real buyers go cold." | Show the empty dashboard. |
+| 0:30–1:15 | "This is one click. Our graph8 org is new, so the weekend clicks are demo data; everything after them is real graph8." | Click **Run weekend**. Point at the pop-ups, then the funnel: "Gmail readers and a student were dropped before we spent a single credit." |
+| 1:15–2:15 | "Each company is enriched and scored, with the reasons shown. For good fits it finds the real decision-makers in graph8's 700M contacts, saves them to the CRM, and graph8's AI writes an email about what their team read. It even checks graph8 Radar: Retool is comparing us with Apollo, so the email answers that." | Watch the banner stop at "3 ready to approve in ~1m". **Review Retool**: score reasons, orange **Uses competitor: Apollo**, buying committee, the **graph8 AI** drafts. |
+| 2:15–3:30 | "Nothing goes out without a human, and the human doesn't even need our app." | On the phone in Work, show the **Monday brief**, then reply **approve CODE**. Laptop pop-up: "Approved in graph8 Work". Then: **Gmail** gets the real email; the **phone rings**: the AI voice agent calling. Pick up for a few seconds. |
+| 3:30–4:15 | "And it closes the loop in the CRM." | Laptop: **Deal + next step** ("Send pricing before Thursday's meeting"). Switch to the graph8 tab: the deal is really there. |
+| 4:15–4:40 | "It learns from you: every approve, reject and edit changes next weekend's scoring." | Reject one company; point at **Learning from you**. |
+| 4:40–5:00 | "Two days of Monday work became two minutes, and the human only clicked approve." | Point at the banner: **By hand ~2 days → Autopilot 1m XXs**. |
 
-**Before judges arrive:** press **Tour** once to check the walkthrough, and install the graph8 Work app (or open app.graph8.com on your phone) so you can reply from it.
+**Safety line if asked:** prospects are never contacted. Approved emails go to our own inbox from our connected mailbox, and the AI only calls our own phone.
 
-**If live breaks:** add `USE_MOCKS=true` as the last line of `backend/.env`, restart the backend, and run the same script in mock mode.
+**If something breaks:** click **Retry** on the row. If live is down, add `USE_MOCKS=true` as the last line of `backend/.env` and restart the backend: the same demo runs on demo data.

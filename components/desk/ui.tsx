@@ -89,19 +89,6 @@ export const Icon = {
   retry: (p: { className?: string }) => <I {...p} d="M4 12a8 8 0 0114-5.3L20 9M20 4v5h-5M20 12a8 8 0 01-14 5.3L4 15M4 20v-5h5" />,
 };
 
-/** Brand mark: a gold dot-matrix arrow, pointing right (weekend signals → pipeline). */
-export function BrandMark({ className = "h-7 w-7" }: { className?: string }) {
-  // Rows of dots that grow toward the tip, forming a chevron.
-  const dots: [number, number, number][] = [];
-  const rows = [[0, 1, 2], [1, 2, 3], [2, 3, 4], [3, 4, 5], [2, 3, 4], [1, 2, 3], [0, 1, 2]];
-  rows.forEach((cols, y) => cols.forEach((x, k) => dots.push([x, y, 0.55 + k * 0.28])));
-  return (
-    <svg viewBox="-0.5 -0.5 7 7" className={className} aria-hidden>
-      {dots.map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r * 0.42} className="fill-gold" />)}
-    </svg>
-  );
-}
-
 /** "Revenue Desk." with the blue full stop. */
 export function Wordmark({ className = "" }: { className?: string }) {
   return <span className={`font-semibold tracking-tight text-foreground ${className}`}>Revenue Desk<span className="text-accent">.</span></span>;

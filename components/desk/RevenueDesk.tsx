@@ -13,7 +13,7 @@ import { exportCsv, type BatchInfo, type BatchState, type Learning, type Mode, t
 import { ActivityView, LearningView, SettingsView, type FeedItem } from "./OtherViews";
 import { deriveRun } from "./run";
 import { AccountsTable, TodayView } from "./TodayView";
-import { BrandMark, Button, EmptyState, Icon, Status, Wordmark } from "./ui";
+import { Button, EmptyState, Icon, Status, Wordmark } from "./ui";
 
 const TITLES: Record<View, { title: string; sub: string }> = {
   today: { title: "Today", sub: "This weekend's engagement, turned into ready-to-approve pipeline" },
@@ -232,7 +232,6 @@ export default function RevenueDesk() {
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-border bg-surface md:flex">
         <div className="flex items-center gap-2.5 px-4 py-4">
-          <BrandMark className="h-7 w-7 shrink-0" />
           <div className="leading-tight">
             <Wordmark className="text-[15px]" />
             <div className="text-[11px] text-muted-soft">on graph8</div>

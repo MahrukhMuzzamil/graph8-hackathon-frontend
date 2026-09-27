@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BrandMark, Wordmark } from "@/components/desk/ui";
+import { Wordmark } from "@/components/desk/ui";
 
 export default function LoginPage() {
   const [user, setUser] = useState("");
@@ -28,7 +28,6 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <BrandMark className="mx-auto mb-3 h-12 w-12" />
           <h1 className="text-3xl"><Wordmark /></h1>
           <p className="mt-1 text-sm text-muted">Weekend engagement → ready-to-approve pipeline, on graph8</p>
         </div>

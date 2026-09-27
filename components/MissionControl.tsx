@@ -477,7 +477,9 @@ export default function MissionControl() {
                     ))}
                   </ul>
                   <div className="text-xs text-muted">
-                    {mode === "live"
+                    {mode === "live" && send.outbox.some((o) => (o as { delivered?: boolean }).delivered)
+                      ? <>{send.outbox.filter((o) => (o as { delivered?: boolean }).delivered).length} approved email(s) really sent through graph8, to <b>your own inbox</b> ({String((send.outbox[0] as { to?: string }).to ?? "")}). Prospects were not contacted.</>
+                      : mode === "live"
                       ? send.outbox.some((o) => (o as { workCopy?: boolean }).workCopy)
                         ? <>{send.outbox.length} approved message(s) held on the live system. A copy of each is in graph8 Work <span className="font-mono">#autopilot-revenue-desk</span>. Prospects were not contacted.</>
                         : <>{send.outbox.length} approved message(s) held on the live system. Prospects were not contacted.</>

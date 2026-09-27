@@ -26,7 +26,9 @@ export function toastFor(e: PipelineEvent): { kind: ToastKind; title: string; bo
     case "approval:done": return { kind: "success", title: d?.via === "graph8 Work" ? "Approved in graph8 Work" : "Approved", body: n(d?.drafts) && d?.edited ? `${d.edited} edited draft(s) will be used.` : "Sending…" };
     case "approval:skipped": return { kind: "warn", title: "Rejected: nothing sent", body: String(d?.reason ?? "") || undefined };
     case "send:done": {
-      const sent = (d?.sent as { status?: string }[] | undefined) ?? [];
+      const sent = (d?.sent as { status?: string; contactEmail?: string }[] | undefined) ?? [];
+      const toInbox = sent.filter((s) => /to your inbox/.test(s.status ?? ""));
+      if (toInbox.length) return { kind: "success", title: `Email sent to your inbox`, body: `${toInbox.length} approved email(s) delivered via graph8 to ${toInbox[0].contactEmail}. Prospects not contacted.` };
       const held = sent.some((s) => /held|dry run/.test(s.status ?? ""));
       return { kind: "success", title: held ? "Emails held: prospects not contacted" : `Sent ${sent.length} message(s)`, body: held ? "A copy of each approved email is in graph8 Work." : undefined };
     }

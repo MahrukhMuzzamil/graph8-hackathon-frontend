@@ -54,8 +54,8 @@ interface ApprovalRequest { approvalId: string; code?: string; summary: string; 
 interface WorkPost { kind: "brief" | "approval"; status: StepStatus; text: string; channel?: string; code?: string; reason?: string; error?: string }
 interface Learning { decisions: number; approved: number; rejected: number; edited: number; lessons: string[] }
 
-interface BatchInfo { batchId: string; totalClicks: number; freemail: number; nonBuyer?: number; domains: string[]; runIds: string[]; demo?: boolean }
-interface BatchState { batch?: BatchInfo; runs: RunSummary[]; brief?: WorkPost }
+interface BatchInfo { batchId: string; totalClicks: number; freemail: number; nonBuyer?: number; domains: string[]; runIds: string[]; demo?: boolean; startedAt?: string }
+interface BatchState { batch?: BatchInfo; runs: RunSummary[]; brief?: WorkPost; settledAt?: string; serverNow?: string }
 interface RunSummary {
   runId: string; domain?: string; company?: string; score?: number; qualified?: boolean;
   people: number; drafts: number; sent: number; deal?: string; status: string; approvalId?: string; currentStep?: string;
@@ -187,6 +187,15 @@ export default function MissionControl() {
     });
   }
 
+  /** Re-runs a failed or stopped company with its original click; the new run replaces it in the table. */
+  async function retry(id: string) {
+    setError(null); setDecided(null);
+    try {
+      const { runId: next } = await api<{ runId: string }>(`/api/runs/${id}/retry`, { method: "POST", body: "{}" });
+      setEvents([]); setRunId(next);
+    } catch (e) { setError(`Retry failed: ${(e as Error).message}`); }
+  }
+
   async function reset() {
     setBusy(true); setError(null);
     await api("/api/demo/reset", { method: "POST" }).catch((e) => setError((e as Error).message));
@@ -241,10 +250,16 @@ export default function MissionControl() {
       </header>
 
       {(error || runError) && <p className="mb-4 rounded-lg bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">{error ?? runError}</p>}
+      {runId && finished && STEP_NAMES.some((s) => state.steps[s].status === "failed") && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-danger/30 bg-danger/5 px-4 py-2.5 text-sm">
+          <span className="text-foreground">A step failed on this run. graph8 may have been slow. Retrying reuses the same click; the company, contacts and deal aren&apos;t duplicated.</span>
+          <button onClick={() => retry(runId)} className="rounded-md bg-danger px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">Retry run</button>
+        </div>
+      )}
 
       <div data-tour="weekend">
         {batch ? (
-          <MondayPanel data={batch} selected={runId} onSelect={selectRun} />
+          <MondayPanel data={batch} selected={runId} onSelect={selectRun} onRetry={retry} />
         ) : (
           <Summary
             signals={engagement?.signals.length} company={qualify?.qualified ? qualify.company.name : undefined}
@@ -588,8 +603,34 @@ function Summary(p: { signals?: number; company?: string; people?: number; draft
   );
 }
 
+/**
+ * The pitch, on screen: "This weekend: 9 clicks → 3 opportunities ready to approve, in 1m 52s.
+ * By hand, a sales team spends ~2 days on this." The timer runs until every company is done or
+ * waiting on a human (server clock, so no drift).
+ */
+function BeforeAfter({ data }: { data: BatchState }) {
+  const { batch, runs, settledAt, serverNow } = data;
+  if (!batch?.startedAt || !serverNow) return null;
+  const ms = Math.max(0, Date.parse(settledAt ?? serverNow) - Date.parse(batch.startedAt));
+  const ready = runs.filter((r) => r.qualified && (r.status === "awaiting_approval" || r.status === "done")).length;
+  const elapsed = ms < 60_000 ? `${Math.round(ms / 1000)}s` : `${Math.floor(ms / 60_000)}m ${String(Math.round((ms % 60_000) / 1000)).padStart(2, "0")}s`;
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[12px] border border-accent/30 bg-accent-soft/60 px-4 py-3">
+      <div className="min-w-0 flex-1 text-sm text-foreground">
+        <span className="font-semibold">This weekend:</span> {batch.totalClicks} clicks → <span className="font-semibold text-score">{ready} {ready === 1 ? "opportunity" : "opportunities"} ready to approve</span>
+        {settledAt ? <> in <span className="font-semibold tabular-nums">{elapsed}</span>.</> : <> · working <span className="tabular-nums">{elapsed}</span>…</>}
+      </div>
+      <div className="flex items-center gap-2 text-xs">
+        <span className="rounded-md bg-surface px-2 py-1 text-muted line-through decoration-danger/60">By hand: ~2 days</span>
+        <span aria-hidden className="text-muted">→</span>
+        <span className="rounded-md bg-score/15 px-2 py-1 font-semibold text-score tabular-nums">Autopilot: {elapsed}</span>
+      </div>
+    </div>
+  );
+}
+
 /** "This weekend: 40 clicks → 5 companies → 3 good fits → 12 decision-makers → 6 emails ready". */
-function MondayPanel({ data, selected, onSelect }: { data: BatchState; selected: string | null; onSelect: (id: string) => void }) {
+function MondayPanel({ data, selected, onSelect, onRetry }: { data: BatchState; selected: string | null; onSelect: (id: string) => void; onRetry: (id: string) => void }) {
   const { batch, runs, brief } = data;
   const fits = runs.filter((r) => r.qualified);
   const sum = (k: "people" | "drafts" | "sent") => runs.reduce((n, r) => n + r[k], 0);
@@ -607,6 +648,7 @@ function MondayPanel({ data, selected, onSelect }: { data: BatchState; selected:
 
   return (
     <section className="mc-card mb-6 p-4">
+      <BeforeAfter data={data} />
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
           This weekend
@@ -668,7 +710,10 @@ function MondayPanel({ data, selected, onSelect }: { data: BatchState; selected:
                 <td className={`py-1.5 pr-3 text-xs ${RUN_STATUS[r.status] ?? "text-muted"}`}>
                   {r.status === "running" ? `running · ${r.currentStep ?? "…"}` : r.status === "awaiting_approval" ? "needs approval" : r.status}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="space-x-1 whitespace-nowrap py-1.5 text-right">
+                  {(r.status === "failed" || r.status === "stopped") && (
+                    <button onClick={() => onRetry(r.runId)} className="rounded-md border border-danger/40 px-2 py-1 text-xs font-medium text-danger hover:bg-danger/10">Retry</button>
+                  )}
                   <button onClick={() => onSelect(r.runId)} className={`rounded-md px-2 py-1 text-xs font-medium ${r.status === "awaiting_approval" ? "border border-warn/40 bg-warn/15 text-warn hover:bg-warn/25" : "border border-border hover:bg-surface-muted"}`}>
                     {r.status === "awaiting_approval" ? "Review" : "View"}
                   </button>
